@@ -19,10 +19,16 @@ using PointNormalCloudT = pcl::PointCloud<PointNormalT>;
 using NormalT = pcl::Normal;
 using NormalCloudT = pcl::PointCloud<NormalT>;
 
+const std::filesystem::path kDatasetRoot = R"(D:\PCL_Datasets\bunny1\bunny\data)";
+
+std::string pathString(const std::filesystem::path& path) {
+  return path.string();
+}
+
 CloudT::Ptr loadAndDownsample(const std::string& path) {
   CloudT::Ptr cloud(new CloudT);
   if (pcl::io::loadPCDFile<PointT>(path, *cloud) != 0) {
-    std::cerr << "读取点云失败: " << path << std::endl;
+    std::cerr << "Failed to load cloud: " << path << std::endl;
     return nullptr;
   }
 
@@ -63,16 +69,14 @@ PointNormalCloudT::Ptr combinePointsAndNormals(const CloudT::Ptr& cloud,
 }  // namespace
 
 int main() {
-  // Day 5 学什么：三维重建。
-  // 作用：把离散的点进一步组织成连续曲面。
-  // 效果：输出一个 PolygonMesh 网格文件，让你看到“点云到模型”的最后一步。
-  const std::string input_path = "../data/processed/bun000_filtered.pcd";
+  const std::string input_path =
+      pathString(kDatasetRoot / "processed" / "bun000_filtered.pcd");
   CloudT::Ptr cloud = loadAndDownsample(input_path);
   if (!cloud) {
     return 1;
   }
 
-  std::cout << "Day 5 输入点数: " << cloud->size() << std::endl;
+  std::cout << "Day 5 input points: " << cloud->size() << std::endl;
 
   NormalCloudT::Ptr normals = computeNormals(cloud);
   PointNormalCloudT::Ptr cloud_with_normals = combinePointsAndNormals(cloud, normals);
@@ -81,8 +85,6 @@ int main() {
       new pcl::search::KdTree<PointNormalT>);
   tree->setInputCloud(cloud_with_normals);
 
-  // GreedyProjectionTriangulation 比泊松重建更轻量，
-  // 更适合当前教学版和 Debug 模式先快速跑通。
   pcl::GreedyProjectionTriangulation<PointNormalT> gp3;
   pcl::PolygonMesh mesh;
   gp3.setSearchRadius(0.03);
@@ -96,13 +98,13 @@ int main() {
   gp3.setSearchMethod(tree);
   gp3.reconstruct(mesh);
 
-  std::filesystem::create_directories("../results/day5");
-  pcl::io::savePLYFile("../results/day5/bun000_mesh.ply", mesh);
+  std::filesystem::create_directories(kDatasetRoot / "results" / "day5");
+  pcl::io::savePLYFile(pathString(kDatasetRoot / "results" / "day5" / "bun000_mesh.ply"), mesh);
 
-  std::cout << "PolygonMesh 重建完成。" << std::endl;
-  std::cout << "网格面片数量: " << mesh.polygons.size() << std::endl;
-  std::cout << "\nDay 5 完成。" << std::endl;
-  std::cout << "这一天的作用：体验如何把点云变成更像模型的网格。" << std::endl;
-  std::cout << "这一天的效果：得到一个可保存、可视化的重建结果文件。" << std::endl;
+  std::cout << "PolygonMesh reconstruction complete." << std::endl;
+  std::cout << "Triangle count: " << mesh.polygons.size() << std::endl;
+  std::cout << "\nDay 5 completed." << std::endl;
+  std::cout << "Purpose: turn a point cloud into a more continuous surface." << std::endl;
+  std::cout << "Effect: you get a mesh file that can be viewed or compared later." << std::endl;
   return 0;
 }

@@ -19,10 +19,16 @@ using NormalCloudT = pcl::PointCloud<NormalT>;
 using FeatureT = pcl::FPFHSignature33;
 using FeatureCloudT = pcl::PointCloud<FeatureT>;
 
+const std::filesystem::path kDatasetRoot = R"(D:\PCL_Datasets\bunny1\bunny\data)";
+
+std::string pathString(const std::filesystem::path& path) {
+  return path.string();
+}
+
 CloudT::Ptr loadAndDownsample(const std::string& path) {
   CloudT::Ptr cloud(new CloudT);
   if (pcl::io::loadPCDFile<PointT>(path, *cloud) != 0) {
-    std::cerr << "读取点云失败: " << path << std::endl;
+    std::cerr << "Failed to load cloud: " << path << std::endl;
     return nullptr;
   }
 
@@ -77,34 +83,34 @@ CloudT::Ptr detectIssKeypoints(const CloudT::Ptr& cloud) {
 }  // namespace
 
 int main() {
-  // Day 3 学什么：法向量、FPFH 和 ISS 关键点。
-  // 作用：理解点云除了坐标之外，还能怎样描述“表面朝向”和“局部几何结构”。
-  // 效果：输出法向量数量、FPFH 特征数量和关键点数量，为配准与识别打基础。
-  const std::string input_path = "../data/processed/bun000_filtered.pcd";
+  const std::string input_path =
+      pathString(kDatasetRoot / "processed" / "bun000_filtered.pcd");
   CloudT::Ptr cloud = loadAndDownsample(input_path);
   if (!cloud) {
     return 1;
   }
 
-  std::cout << "Day 3 输入点数: " << cloud->size() << std::endl;
+  std::cout << "Day 3 input points: " << cloud->size() << std::endl;
 
   NormalCloudT::Ptr normals = computeNormals(cloud);
-  std::cout << "法向量计算完成，数量 = " << normals->size() << std::endl;
+  std::cout << "Normal estimation complete, count = " << normals->size() << std::endl;
 
   FeatureCloudT::Ptr features = computeFpfh(cloud, normals);
-  std::cout << "FPFH 特征计算完成，数量 = " << features->size() << std::endl;
-  std::cout << "每个 FPFH 特征本质上是 33 维描述子。" << std::endl;
+  std::cout << "FPFH complete, count = " << features->size() << std::endl;
+  std::cout << "Each FPFH descriptor is 33-dimensional." << std::endl;
 
   CloudT::Ptr keypoints = detectIssKeypoints(cloud);
-  std::cout << "ISS 关键点提取完成，数量 = " << keypoints->size() << std::endl;
+  std::cout << "ISS keypoint extraction complete, count = " << keypoints->size() << std::endl;
 
-  std::filesystem::create_directories("../results/day3");
-  pcl::io::savePCDFileBinary("../results/day3/bun000_feature_cloud.pcd", *cloud);
-  pcl::io::savePCDFileBinary("../results/day3/bun000_keypoints.pcd", *keypoints);
+  std::filesystem::create_directories(kDatasetRoot / "results" / "day3");
+  pcl::io::savePCDFileBinary(
+      pathString(kDatasetRoot / "results" / "day3" / "bun000_feature_cloud.pcd"), *cloud);
+  pcl::io::savePCDFileBinary(
+      pathString(kDatasetRoot / "results" / "day3" / "bun000_keypoints.pcd"), *keypoints);
 
-  std::cout << "\nDay 3 完成。" << std::endl;
-  std::cout << "法向量的作用：告诉我们表面朝向。" << std::endl;
-  std::cout << "FPFH 的作用：描述局部几何形状。" << std::endl;
-  std::cout << "ISS 关键点的作用：只保留更有代表性的点，减少后续计算量。" << std::endl;
+  std::cout << "\nDay 3 completed." << std::endl;
+  std::cout << "Normals describe local surface direction." << std::endl;
+  std::cout << "FPFH describes local geometric shape." << std::endl;
+  std::cout << "ISS keeps only more representative points for later stages." << std::endl;
   return 0;
 }

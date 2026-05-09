@@ -59,6 +59,22 @@ class PCLFiveDayStructureTest(unittest.TestCase):
         self.assertIn("NormalEstimation", source)
         self.assertIn("PolygonMesh", source)
 
+    def test_all_day_sources_are_ascii_safe_for_visual_studio(self):
+        paths = [
+            ROOT / "src" / "day1" / "day1_registration.cpp",
+            ROOT / "src" / "day2" / "day2_icp.cpp",
+            ROOT / "src" / "day3" / "day3_features.cpp",
+            ROOT / "src" / "day4" / "day4_segmentation.cpp",
+            ROOT / "src" / "day5" / "day5_reconstruction.cpp",
+        ]
+
+        for path in paths:
+            text = path.read_text(encoding="utf-8")
+            try:
+                text.encode("ascii")
+            except UnicodeEncodeError as exc:
+                self.fail(f"{path.name} contains non-ASCII text and may break in VS: {exc}")
+
 
 if __name__ == "__main__":
     unittest.main()
