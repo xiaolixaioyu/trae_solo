@@ -22,6 +22,8 @@ class Day1SourceStructureTest(unittest.TestCase):
         self.assertIn("FPFHEstimation", text)
         self.assertIn("SampleConsensusInitialAlignment", text)
         self.assertIn("registration_output", text)
+        self.assertIn("removeNaNFromPointCloud", text)
+        self.assertIn("Finite point count", text)
 
     def test_day1_uses_windows_dataset_root_and_ascii_safe_text(self):
         source = ROOT / "src" / "day1" / "day1_registration.cpp"

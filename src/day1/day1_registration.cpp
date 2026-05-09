@@ -3,6 +3,7 @@
 #include <string>
 
 #include <pcl/features/fpfh.h>
+#include <pcl/filters/filter.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
@@ -41,12 +42,26 @@ bool preprocessCloud(const std::string& input_ply_path,
   std::cout << "\n========== Day 1 Preprocess: " << input_ply_path << " ==========" << std::endl;
   std::cout << "Raw point count: " << raw_cloud->size() << std::endl;
 
+  // Stanford Bunny raw scans are stored as organized range-grid data.
+  // Many entries are invalid placeholders instead of real surface points.
+  // Remove NaN / non-finite points first so later filters work on valid geometry only.
+  CloudT::Ptr finite_cloud(new CloudT);
+  std::vector<int> valid_indices;
+  pcl::removeNaNFromPointCloud(*raw_cloud, *finite_cloud, valid_indices);
+
+  std::cout << "Finite point count: " << finite_cloud->size() << std::endl;
+
+  if (finite_cloud->empty()) {
+    std::cerr << "No finite points remained after removing invalid range-grid samples." << std::endl;
+    return false;
+  }
+
   // Step 1: VoxelGrid downsampling.
   // Purpose: reduce the point count before later stages.
   // Effect: debug runs finish faster while the overall shape is still preserved.
   CloudT::Ptr voxel_cloud(new CloudT);
   pcl::VoxelGrid<PointT> voxel_filter;
-  voxel_filter.setInputCloud(raw_cloud);
+  voxel_filter.setInputCloud(finite_cloud);
   voxel_filter.setLeafSize(voxel_leaf_size, voxel_leaf_size, voxel_leaf_size);
   voxel_filter.filter(*voxel_cloud);
 
